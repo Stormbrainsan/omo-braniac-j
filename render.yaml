@@ -1,0 +1,95 @@
+services:
+  - type: web
+    name: tses-otp-web
+    env: docker
+    dockerfilePath: Dockerfile
+    plan: free
+    dockerCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+    envVars:
+      - key: DJANGO_DEBUG
+        value: "0"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_ALLOWED_HOSTS
+        value: "*"
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: tses-otp-db
+          property: host
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: tses-otp-db
+          property: port
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: tses-otp-db
+          property: database
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: tses-otp-db
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: tses-otp-db
+          property: password
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: tses-otp-redis
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: tses-otp-redis
+          property: connectionString
+
+  - type: worker
+    name: tses-otp-worker
+    env: docker
+    dockerfilePath: Dockerfile
+    plan: free
+    dockerCommand: celery -A config worker --loglevel=info
+    envVars:
+      - key: DJANGO_DEBUG
+        value: "0"
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: tses-otp-db
+          property: host
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: tses-otp-db
+          property: port
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: tses-otp-db
+          property: database
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: tses-otp-db
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: tses-otp-db
+          property: password
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: tses-otp-redis
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: tses-otp-redis
+          property: connectionString
+
+  - type: redis
+    name: tses-otp-redis
+    plan: free
+    ipAllowList: []
+
+databases:
+  - name: tses-otp-db
+    databaseName: tses_otp
+    user: tses_user
+    plan: free
